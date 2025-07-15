@@ -98,13 +98,15 @@ const LoginPage: React.FC = () => {
           location: '',
           preferred_language: 'en',
           user_role: 'Farmer',
+          image_url: result.user.photoURL || '',
           created_at: new Date(),
           last_login: new Date()
         });
       } else {
         // Update last login time for existing users
         await setDoc(doc(db, "users", result.user.uid), {
-          last_login: new Date()
+          last_login: new Date(),
+          image_url: result.user.photoURL || ''
         }, { merge: true });
       }
       

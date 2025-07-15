@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import FormInput from '../components/FormInput';
 import FormSelect from '../components/FormSelect';
+import ProfileImageUpload from '../components/ProfileImageUpload';
 import { LANGUAGES } from '../utils/dummyData';
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
@@ -20,6 +21,7 @@ const UserProfilePage: React.FC = () => {
     role: '',
     shopName: '',
     shopAddress: '',
+    image_url: '',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,9 +54,12 @@ const UserProfilePage: React.FC = () => {
             role: userData.user_role || '',
             shopName: userData.shop_name || '',
             shopAddress: userData.shop_address || '',
+            image_url: userData.image_url || '',
           });
         } else {
           // If user document doesn't exist, initialize with auth data
+          const photoURL = auth.currentUser.photoURL || '';
+          
           setFormData({
             name: auth.currentUser.displayName || '',
             email: auth.currentUser.email || '',
@@ -64,6 +69,7 @@ const UserProfilePage: React.FC = () => {
             role: '',
             shopName: '',
             shopAddress: '',
+            image_url: photoURL,
           });
         }
         setIsLoading(false);
@@ -85,6 +91,17 @@ const UserProfilePage: React.FC = () => {
     }));
     
     // Clear any previous error/success messages when user makes changes
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      image_url: imageUrl,
+    }));
+    
+    // Clear any previous error/success messages
     setError(null);
     setSuccess(null);
   };
@@ -129,6 +146,7 @@ const UserProfilePage: React.FC = () => {
         user_role: formData.role,
         shop_name: formData.shopName || '',
         shop_address: formData.shopAddress || '',
+        image_url: formData.image_url || '',
         updated_at: new Date()
       });
       
@@ -177,7 +195,7 @@ const UserProfilePage: React.FC = () => {
   
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto pb-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gradient">My Profile</h1>
           <button 
@@ -188,7 +206,7 @@ const UserProfilePage: React.FC = () => {
           </button>
         </div>
         
-        <div className="card">
+        <div className="card overflow-visible">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
               {error}
@@ -202,6 +220,11 @@ const UserProfilePage: React.FC = () => {
           )}
           
           <form onSubmit={handleSubmit}>
+            <ProfileImageUpload 
+              currentImageUrl={formData.image_url} 
+              onImageUpload={handleImageUpload} 
+            />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput
                 id="name"

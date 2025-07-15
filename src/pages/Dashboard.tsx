@@ -62,6 +62,7 @@ const Dashboard: React.FC = () => {
             location: '',
             preferredLanguage: 'en',
             role: 'Farmer' as UserRole,
+            image_url: firebaseUser.photoURL || '',
           };
           
           if (userDoc.exists()) {
@@ -73,6 +74,7 @@ const Dashboard: React.FC = () => {
               location: data.location || '',
               preferredLanguage: data.preferred_language || 'en',
               role: (data.user_role as UserRole) || 'Farmer' as UserRole,
+              image_url: data.image_url || firebaseUser.photoURL || '',
             };
           }
           
@@ -315,9 +317,26 @@ const Dashboard: React.FC = () => {
     <Layout showLoginButton={false} showRegisterButton={false}>
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gradient">
-            Welcome, {user?.name || 'User'}
-          </h1>
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-green-500 mr-4 bg-gray-100">
+              {user?.image_url ? (
+                <img 
+                  src={user.image_url} 
+                  alt={user?.name || 'User'} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold text-gradient">
+              Welcome, {user?.name || 'User'}
+            </h1>
+          </div>
           <div className="flex space-x-3">
             <button 
               onClick={() => navigate('/profile')}

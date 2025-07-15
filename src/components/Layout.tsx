@@ -51,17 +51,19 @@ const Layout: React.FC<LayoutProps> = ({
   }, [currentLanguage]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="flex flex-col min-h-screen w-full overflow-x-hidden">
       <Header 
         showLoginButton={showLoginButton} 
         showRegisterButton={showRegisterButton} 
         currentLanguage={currentLanguage}
         onLanguageChange={handleLanguageChange}
       />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        {children}
+      <main className="flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 py-8">
+          {children}
+        </div>
       </main>
-      <footer className="bg-white shadow-inner py-6">
+      <footer className="bg-white shadow-inner py-6 w-full">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center items-center mb-4">
             <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-xs mr-2">

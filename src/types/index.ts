@@ -5,6 +5,7 @@ export interface User {
   location: string;
   preferredLanguage: string;
   role: 'Farmer' | 'Artisan' | 'Kirana Shop Owner';
+  image_url?: string;
 }
 
 export interface Product {
