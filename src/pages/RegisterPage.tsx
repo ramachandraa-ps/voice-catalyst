@@ -46,6 +46,22 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.password || !formData.location || 
+        !formData.preferredLanguage || !formData.role || !formData.mobileNumber) {
+      setIsSubmitting(false);
+      setError('Please fill in all required fields.');
+      return;
+    }
+
+    // Validate shop details for certain roles
+    if ((formData.role === 'Farmer' || formData.role === 'Artisan' || formData.role === 'Kirana Shop Owner') && 
+        (!formData.shopName || !formData.shopAddress)) {
+      setIsSubmitting(false);
+      setError('Please fill in shop details.');
+      return;
+    }
+
     const auth = getAuth(app);
     const db = getFirestore(app);
     const email = formData.email;
@@ -68,9 +84,10 @@ const RegisterPage: React.FC = () => {
         location: formData.location,
         preferred_language: formData.preferredLanguage,
         user_role: formData.role,
-        shop_name: formData.shopName,
-        shop_address: formData.shopAddress,
-        created_at: new Date()
+        shop_name: formData.shopName || '',
+        shop_address: formData.shopAddress || '',
+        created_at: new Date(),
+        last_login: new Date()
       });
       
       setIsSubmitting(false);
@@ -102,8 +119,14 @@ const RegisterPage: React.FC = () => {
           location: '',
           preferred_language: 'en',
           user_role: 'Farmer',
-          created_at: new Date()
+          created_at: new Date(),
+          last_login: new Date()
         });
+      } else {
+        // Update last login time for existing users
+        await setDoc(doc(db, "users", result.user.uid), {
+          last_login: new Date()
+        }, { merge: true });
       }
       
       setIsSubmitting(false);

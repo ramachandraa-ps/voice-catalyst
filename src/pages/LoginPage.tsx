@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import FormInput from '../components/FormInput';
 import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
 import app from "../firebase";
 
 const LoginPage: React.FC = () => {
@@ -10,7 +11,7 @@ const LoginPage: React.FC = () => {
   
   const [formData, setFormData] = useState({
     email: '',
-    password: '', // In a real app, this would be an OTP
+    password: '', 
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,22 +31,55 @@ const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     setError(null);
 
+    // Validate required fields
+    if (!formData.email || !formData.password) {
+      setIsSubmitting(false);
+      setError('Please enter both email and password.');
+      return;
+    }
+
     const auth = getAuth(app);
+    const db = getFirestore(app);
     const email = formData.email;
     const password = formData.password;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // Sign in with email and password
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Store user ID in localStorage for Dashboard
+      localStorage.setItem('userId', userCredential.user.uid);
+      
+      // Update last login time in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        last_login: new Date()
+      }, { merge: true });
+      
       setIsSubmitting(false);
       navigate('/dashboard');
     } catch (error: any) {
       setIsSubmitting(false);
-      setError(error.message);
+      
+      // Handle specific error cases
+      if (error.code === 'auth/user-not-found') {
+        setError('No user found with this email address. Please check your email or register.');
+      } else if (error.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Invalid email address. Please enter a valid email.');
+      } else if (error.code === 'auth/user-disabled') {
+        setError('This account has been disabled. Please contact support.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Too many unsuccessful login attempts. Please try again later.');
+      } else {
+        setError(error.message);
+      }
     }
   };
 
   const handleGoogleLogin = async () => {
     const auth = getAuth(app);
+    const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
     setIsSubmitting(true);
     setError(null);
@@ -54,6 +88,26 @@ const LoginPage: React.FC = () => {
       const result = await signInWithPopup(auth, provider);
       // Set userId in localStorage for Dashboard
       localStorage.setItem('userId', result.user.uid);
+      
+      // Store additional user data in Firestore if it's a new user
+      if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+        await setDoc(doc(db, "users", result.user.uid), {
+          full_name: result.user.displayName || '',
+          email: result.user.email || '',
+          mobile_number: result.user.phoneNumber || '',
+          location: '',
+          preferred_language: 'en',
+          user_role: 'Farmer',
+          created_at: new Date(),
+          last_login: new Date()
+        });
+      } else {
+        // Update last login time for existing users
+        await setDoc(doc(db, "users", result.user.uid), {
+          last_login: new Date()
+        }, { merge: true });
+      }
+      
       setIsSubmitting(false);
       navigate('/dashboard');
     } catch (error: any) {

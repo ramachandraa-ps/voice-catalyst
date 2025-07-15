@@ -5,15 +5,13 @@ import { QRCodeSVG } from 'qrcode.react';
 import Layout from '../components/Layout';
 import VoiceInput from '../components/VoiceInput';
 import FormInput from '../components/FormInput';
-// Commented out since it's unused
-// import FormSelect from '../components/FormSelect';
 import ProductCard from '../components/ProductCard';
 import { 
   generateCatalogShareUrl,
   LANGUAGES, 
 } from '../utils/dummyData';
 import { Product, User } from '../types';
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import app from "../firebase";
 
@@ -46,66 +44,71 @@ const Dashboard: React.FC = () => {
     const fetchUserAndProducts = async () => {
       const auth = getAuth();
       const db = getFirestore(app);
-      const firebaseUser = auth.currentUser;
       
-      if (!firebaseUser) {
-        navigate('/login');
-        return;
-      }
-      
-      try {
-        // Get user data from Firestore
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        let userData = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email || 'User',
-          mobileNumber: '',
-          location: '',
-          preferredLanguage: 'en',
-          role: 'Farmer' as UserRole,
-        };
-        
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          userData = {
-            id: firebaseUser.uid,
-            name: data.full_name || firebaseUser.displayName || 'User',
-            mobileNumber: data.mobile_number || '',
-            location: data.location || '',
-            preferredLanguage: data.preferred_language || 'en',
-            role: (data.user_role as UserRole) || 'Farmer' as UserRole,
-          };
+      // Use onAuthStateChanged to handle authentication state
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (!firebaseUser) {
+          navigate('/login');
+          return;
         }
         
-        setUser(userData);
-        setVoiceLanguage(userData.preferredLanguage || 'en');
-        
-        // Get products from Firestore
-        const q = query(collection(db, "products"), where("userId", "==", firebaseUser.uid));
-        const querySnapshot = await getDocs(q);
-        const productsList: Product[] = [];
-        
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          productsList.push({
-            id: doc.id,
-            userId: data.userId,
-            name: data.name,
-            quantity: data.quantity,
-            price: data.price,
-            descriptionEnglish: data.descriptionEnglish,
-            descriptionLocal: data.descriptionLocal,
-            createdAt: data.createdAt.toDate(),
-            updatedAt: data.updatedAt.toDate(),
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          let userData = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            mobileNumber: '',
+            location: '',
+            preferredLanguage: 'en',
+            role: 'Farmer' as UserRole,
+          };
+          
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            userData = {
+              id: firebaseUser.uid,
+              name: data.full_name || firebaseUser.displayName || 'User',
+              mobileNumber: data.mobile_number || '',
+              location: data.location || '',
+              preferredLanguage: data.preferred_language || 'en',
+              role: (data.user_role as UserRole) || 'Farmer' as UserRole,
+            };
+          }
+          
+          setUser(userData);
+          setVoiceLanguage(userData.preferredLanguage || 'en');
+          
+          // Get products from Firestore
+          const q = query(collection(db, "products"), where("userId", "==", firebaseUser.uid));
+          const querySnapshot = await getDocs(q);
+          const productsList: Product[] = [];
+          
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            productsList.push({
+              id: doc.id,
+              userId: data.userId,
+              name: data.name,
+              quantity: data.quantity,
+              price: data.price,
+              descriptionEnglish: data.descriptionEnglish,
+              descriptionLocal: data.descriptionLocal,
+              createdAt: data.createdAt.toDate(),
+              updatedAt: data.updatedAt.toDate(),
+            });
           });
-        });
-        
-        setProducts(productsList);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setIsLoading(false);
-      }
+          
+          setProducts(productsList);
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setIsLoading(false);
+        }
+      });
+      
+      // Cleanup subscription on unmount
+      return () => unsubscribe();
     };
     
     fetchUserAndProducts();
@@ -448,14 +451,14 @@ const Dashboard: React.FC = () => {
                         <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/><path d="M6.343 17.657A8 8 0 0112 16a8 8 0 015.657 1.657"/></svg>
                         <span className="font-semibold text-gray-700">Owner Name:</span>
                       </div>
-                      <div className="text-green-700 text-lg font-bold mb-4">Tarun Gopinath</div>
+                      <div className="text-green-700 text-lg font-bold mb-4">{user?.name || 'User'}</div>
                     </div>
                     <div className="flex-1 flex flex-col items-center md:items-start">
                       <div className="flex items-center mb-2">
                         <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M2 8.5A2.5 2.5 0 014.5 6h15A2.5 2.5 0 0122 8.5v7a2.5 2.5 0 01-2.5 2.5h-15A2.5 2.5 0 012 15.5v-7z"/><path d="M6 10h.01M6 14h.01M10 10h.01M10 14h.01M14 10h.01M14 14h.01M18 10h.01M18 14h.01"/></svg>
                         <span className="font-semibold text-gray-700">Contact Number:</span>
                       </div>
-                      <div className="text-green-700 text-lg font-bold mb-4">+91 98765 43210</div>
+                      <div className="text-green-700 text-lg font-bold mb-4">{user?.mobileNumber || 'N/A'}</div>
                     </div>
                   </div>
                   <div className="overflow-x-auto px-8 pb-8">
@@ -470,33 +473,41 @@ const Dashboard: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="even:bg-green-50 hover:bg-green-100 transition">
-                          <td className="py-3 px-4 font-medium">2024-06-01</td>
-                          <td className="py-3 px-4 flex items-center gap-2"><span className="inline-block bg-green-100 rounded-full p-1"><svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg></span>Organic Rice</td>
-                          <td className="py-3 px-4">25 kg</td>
-                          <td className="py-3 px-4">1200</td>
-                          <td className="py-3 px-4">High quality organic rice</td>
-                        </tr>
-                        <tr className="even:bg-green-50 hover:bg-green-100 transition">
-                          <td className="py-3 px-4 font-medium">2024-06-01</td>
-                          <td className="py-3 px-4 flex items-center gap-2"><span className="inline-block bg-green-100 rounded-full p-1"><svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg></span>Fresh Tomatoes</td>
-                          <td className="py-3 px-4">10 kg</td>
-                          <td className="py-3 px-4">400</td>
-                          <td className="py-3 px-4">Farm fresh, juicy tomatoes</td>
-                        </tr>
-                        <tr className="even:bg-green-50 hover:bg-green-100 transition">
-                          <td className="py-3 px-4 font-medium">2024-06-01</td>
-                          <td className="py-3 px-4 flex items-center gap-2"><span className="inline-block bg-green-100 rounded-full p-1"><svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg></span>Pure Honey</td>
-                          <td className="py-3 px-4">5 kg</td>
-                          <td className="py-3 px-4">2500</td>
-                          <td className="py-3 px-4">Natural, unprocessed honey</td>
-                        </tr>
+                        {products.length > 0 ? (
+                          products.map((product) => (
+                            <tr key={product.id} className="even:bg-green-50 hover:bg-green-100 transition">
+                              <td className="py-3 px-4 font-medium">
+                                {product.createdAt.toLocaleDateString()}
+                              </td>
+                              <td className="py-3 px-4 flex items-center gap-2">
+                                <span className="inline-block bg-green-100 rounded-full p-1">
+                                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+                                    <path d="M12 6v6l4 2"/>
+                                  </svg>
+                                </span>
+                                {product.name}
+                              </td>
+                              <td className="py-3 px-4">{product.quantity}</td>
+                              <td className="py-3 px-4">{product.price}</td>
+                              <td className="py-3 px-4">{product.descriptionEnglish}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="py-4 px-4 text-center text-gray-500">
+                              No products available
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                   <div className="mt-8 text-center pb-4">
                     <span className="text-green-700 font-extrabold text-xl">Thank you for visiting our catalog!</span>
-                    <div className="mt-2 text-gray-500 text-sm">For orders, contact us at <span className="underline">+91 98765 43210</span> or visit <span className="underline text-green-700">GreenMart</span> in person.</div>
+                    <div className="mt-2 text-gray-500 text-sm">
+                      For orders, contact us at <span className="underline">{user?.mobileNumber || 'N/A'}</span> or visit <span className="underline text-green-700">GreenMart</span> in person.
+                    </div>
                   </div>
                 </div>
               </div>
