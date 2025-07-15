@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import CatalogPage from './pages/CatalogPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/catalog/:userId" element={<CatalogPage />} />
+        <Route path="/profile" element={<UserProfilePage />} />
       </Routes>
     </Router>
   );

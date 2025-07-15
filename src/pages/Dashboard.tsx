@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { FaCopy, FaQrcode } from 'react-icons/fa';
+import { FaCopy, FaQrcode, FaUser } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react';
 import Layout from '../components/Layout';
 import VoiceInput from '../components/VoiceInput';
@@ -318,12 +318,23 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-gradient">
             Welcome, {user?.name || 'User'}
           </h1>
-          <button 
-            onClick={handleLogout}
-            className="btn btn-secondary"
-          >
-            Logout
-          </button>
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="btn btn-primary flex items-center"
+            >
+              <div className="mr-2">
+                {FaUser({ size: 16 })}
+              </div>
+              My Profile
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="btn btn-secondary"
+            >
+              Logout
+            </button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
