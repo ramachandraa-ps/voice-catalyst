@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { FaCopy, FaQrcode, FaUser } from 'react-icons/fa';
 import { QRCodeSVG } from 'qrcode.react';
 import Layout from '../components/Layout';
-import VoiceInput from '../components/VoiceInput';
+import CatalogEntryForm from '../components/CatalogEntryForm';
 import FormInput from '../components/FormInput';
 import ProductCard from '../components/ProductCard';
 import { 
@@ -343,7 +342,7 @@ const Dashboard: React.FC = () => {
               className="btn btn-primary flex items-center"
             >
               <div className="mr-2">
-                {FaUser({ size: 16 })}
+                👤
               </div>
               My Profile
             </button>
@@ -362,51 +361,22 @@ const Dashboard: React.FC = () => {
             <div className="card mb-6 border-l-4 border-l-green-500">
               <h2 className="text-xl font-semibold mb-4">Add Product by Voice</h2>
               
-              <div className="mb-4">
-                <label className="form-label">Voice Language</label>
-                <div className="relative">
-                  <select
-                    className="form-input appearance-none border-green-100"
-                    value={voiceLanguage}
-                    onChange={(e) => setVoiceLanguage(e.target.value)}
-                  >
-                    {languageOptions.map((lang) => (
-                      <option key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
-              <VoiceInput 
-                onTranscription={handleVoiceTranscription}
-                language={voiceLanguage}
+              <CatalogEntryForm 
+                onSubmit={(productData) => {
+                  // Set the product form data
+                  setProductForm({
+                    name: productData.name,
+                    quantity: productData.quantity,
+                    price: productData.price.toString(),
+                    descriptionEnglish: productData.descriptionEnglish,
+                    descriptionLocal: '',
+                  });
+                  
+                  // Submit the product form
+                  handleProductSubmit(new Event('submit') as any);
+                }}
+                isLoading={isLoading}
               />
-              
-              <div className="mt-4">
-                <button
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setProductForm({
-                      name: '',
-                      quantity: '',
-                      price: '',
-                      descriptionEnglish: '',
-                      descriptionLocal: '',
-                    });
-                    setShowProductForm(true);
-                  }}
-                  className="btn btn-secondary w-full"
-                >
-                  Add Product Manually
-                </button>
-              </div>
             </div>
             
             <div className="card border-l-4 border-l-green-600">
@@ -414,20 +384,20 @@ const Dashboard: React.FC = () => {
               <div className="flex flex-col space-y-3">
                 <button
                   onClick={copyLinkToClipboard}
-                  className="btn btn-secondary flex items-center justify-center"
+                  className="btn btn-outline-primary flex items-center mr-2"
                 >
                   <div className="mr-2">
-                    {FaCopy({ size: 16 })}
+                    📋
                   </div>
                   Copy Link
                 </button>
                 
-                <button
+                <button 
                   onClick={() => setShowQRModal(true)}
-                  className="btn btn-secondary flex items-center justify-center"
+                  className="btn btn-outline-primary flex items-center"
                 >
                   <div className="mr-2">
-                    {FaQrcode({ size: 16 })}
+                    📱
                   </div>
                   Show QR Code
                 </button>

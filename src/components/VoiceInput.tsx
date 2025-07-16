@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FaMicrophone, FaStop } from 'react-icons/fa';
+import React, { useState, useRef } from 'react';
+import { transcribeAudio } from '../services/assemblyAI';
 
 interface VoiceInputProps {
   onTranscription: (text: string) => void;
@@ -9,65 +9,98 @@ interface VoiceInputProps {
 const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscription, language }) => {
   const [isListening, setIsListening] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const startListening = () => {
-    setIsListening(true);
-    setErrorMessage(null);
-    
-    // Here we would normally use the Web Speech API
-    // For this demo, we'll simulate transcription after a delay
-    setTimeout(() => {
-      // Simulate different transcriptions based on language
-      let transcription = '';
+  const startListening = async () => {
+    try {
+      setIsListening(true);
+      setErrorMessage(null);
+      audioChunksRef.current = [];
       
-      switch(language) {
-        case 'hi':
-          transcription = 'चावल, 25 किलो, 1200 रुपये';
-          break;
-        case 'ta':
-          transcription = 'அரிசி, 25 கிலோ, 1200 ரூபாய்';
-          break;
-        default:
-          transcription = 'Rice, 25 kilograms, 1200 rupees';
-      }
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      onTranscription(transcription);
+      // Create media recorder
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Set up event handlers
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        try {
+          setIsProcessing(true);
+          
+          // Combine audio chunks into a single blob
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          
+          // Transcribe the audio using AssemblyAI
+          const transcription = await transcribeAudio(audioBlob);
+          
+          // Pass the transcription to the parent component
+          onTranscription(transcription);
+        } catch (error) {
+          console.error('Error processing audio:', error);
+          setErrorMessage('Failed to transcribe audio. Please try again.');
+        } finally {
+          setIsProcessing(false);
+          
+          // Stop all audio tracks
+          stream.getTracks().forEach(track => track.stop());
+        }
+      };
+      
+      // Start recording
+      mediaRecorder.start();
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      setErrorMessage('Could not access microphone. Please check permissions.');
       setIsListening(false);
-    }, 2000);
+    }
   };
 
   const stopListening = () => {
-    setIsListening(false);
+    if (mediaRecorderRef.current && isListening) {
+      mediaRecorderRef.current.stop();
+      setIsListening(false);
+    }
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center space-x-4">
+    <div className="voice-input-container">
+      <div className="flex flex-col items-center">
         <button
           onClick={isListening ? stopListening : startListening}
-          className={`p-4 rounded-full flex items-center justify-center transition-all duration-200 ${
-            isListening 
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-              : 'bg-blue-600 hover:bg-blue-700'
-          } text-white shadow-md`}
-          title={isListening ? 'Stop listening' : 'Start listening'}
+          disabled={isProcessing}
+          className={`rounded-full p-4 ${isListening ? 'bg-red-500' : 'bg-blue-500'} text-white shadow-lg hover:shadow-xl transition-all`}
         >
           <div className="h-6 w-6 flex items-center justify-center">
-            {isListening ? FaStop({ size: 24 }) : FaMicrophone({ size: 24 })}
+            {isListening ? '◼' : '🎤'}
           </div>
         </button>
         
-        <div>
-          <p className="text-sm text-gray-700 font-medium">
-            {isListening 
-              ? 'Listening... Speak now'
-              : 'Click the microphone to start speaking'
-            }
-          </p>
-          {errorMessage && (
-            <p className="text-sm text-red-600 mt-1">{errorMessage}</p>
-          )}
+        <div className="mt-2 text-sm">
+          {isListening ? 'Tap to stop' : 'Tap to speak'}
         </div>
+        
+        {isProcessing && (
+          <div className="mt-4 text-gray-600">
+            Processing audio...
+          </div>
+        )}
+        
+        {errorMessage && (
+          <div className="mt-4 text-red-500">
+            {errorMessage}
+          </div>
+        )}
       </div>
     </div>
   );
