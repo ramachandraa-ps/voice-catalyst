@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import VoiceInput from './VoiceInput';
 import FormInput from './FormInput';
 import FormSelect from './FormSelect';
+import { translateToLanguage } from '../services/geminiLanguageService';
 
 interface CatalogEntryFormProps {
   onSubmit: (productData: {
@@ -9,6 +10,9 @@ interface CatalogEntryFormProps {
     quantity: string;
     price: number;
     descriptionEnglish: string;
+    descriptionLocal?: string;
+    detectedLanguage?: string;
+    languageCode?: string;
   }) => void;
   isLoading?: boolean;
 }
@@ -19,38 +23,45 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
     quantity: '',
     price: '',
     descriptionEnglish: '',
+    descriptionLocal: '',
+    detectedLanguage: '',
+    languageCode: '',
   });
   
   const [language, setLanguage] = useState('en');
+  const [processingTranslation, setProcessingTranslation] = useState(false);
+  const [translationMessage, setTranslationMessage] = useState('');
   
-  // Handle voice transcription
-  const handleTranscription = (text: string) => {
-    // Simple parsing logic for the transcription
-    // This is a basic implementation that can be improved with NLP
+  // Handle voice transcription with enhanced language detection
+  const handleTranscription = async (text: string, detectedData: {
+    name: string;
+    quantity: string;
+    price: string;
+    description: string;
+    detectedLanguage: string;
+    languageCode: string;
+  }) => {
     try {
-      // Example expected format: "Product name, quantity, price"
-      const parts = text.split(',').map(part => part.trim());
+      // Set the form data with the extracted information
+      setFormData({
+        name: detectedData.name || '',
+        quantity: detectedData.quantity || '',
+        price: detectedData.price || '',
+        descriptionEnglish: detectedData.description || text,
+        descriptionLocal: text,
+        detectedLanguage: detectedData.detectedLanguage || 'Unknown',
+        languageCode: detectedData.languageCode || 'en',
+      });
       
-      if (parts.length >= 1) {
-        setFormData(prev => ({ ...prev, name: parts[0] }));
+      // Update the language selector to match the detected language
+      if (detectedData.languageCode) {
+        setLanguage(detectedData.languageCode);
       }
       
-      if (parts.length >= 2) {
-        setFormData(prev => ({ ...prev, quantity: parts[1] }));
-      }
-      
-      if (parts.length >= 3) {
-        // Try to extract the number from the price text
-        const priceMatch = parts[2].match(/\d+/);
-        if (priceMatch) {
-          setFormData(prev => ({ ...prev, price: priceMatch[0] }));
-        }
-      }
-      
-      // Use the full text as the description
-      setFormData(prev => ({ ...prev, descriptionEnglish: text }));
+      setTranslationMessage(`Detected language: ${detectedData.detectedLanguage || 'Unknown'}`);
     } catch (error) {
-      console.error('Error parsing transcription:', error);
+      console.error('Error handling transcription:', error);
+      setTranslationMessage('Error processing language detection');
     }
   };
   
@@ -58,6 +69,34 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // Handle language change
+  const handleLanguageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLanguage = e.target.value;
+    setLanguage(newLanguage);
+    
+    // If we have content in the description field, translate it to the new language
+    if (formData.descriptionEnglish && newLanguage !== 'en') {
+      try {
+        setProcessingTranslation(true);
+        setTranslationMessage('Translating...');
+        
+        const translatedDescription = await translateToLanguage(formData.descriptionEnglish, newLanguage);
+        
+        setFormData(prev => ({
+          ...prev,
+          descriptionLocal: translatedDescription
+        }));
+        
+        setTranslationMessage('Translation complete');
+      } catch (error) {
+        console.error('Error translating description:', error);
+        setTranslationMessage('Error translating text');
+      } finally {
+        setProcessingTranslation(false);
+      }
+    }
   };
   
   // Handle form submission
@@ -68,6 +107,9 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
       quantity: formData.quantity,
       price: parseFloat(formData.price) || 0,
       descriptionEnglish: formData.descriptionEnglish,
+      descriptionLocal: formData.descriptionLocal,
+      detectedLanguage: formData.detectedLanguage,
+      languageCode: formData.languageCode,
     });
   };
   
@@ -76,7 +118,14 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
     { value: 'en', label: 'English' },
     { value: 'hi', label: 'Hindi' },
     { value: 'ta', label: 'Tamil' },
-    // Add more languages as needed
+    { value: 'te', label: 'Telugu' },
+    { value: 'kn', label: 'Kannada' },
+    { value: 'ml', label: 'Malayalam' },
+    { value: 'mr', label: 'Marathi' },
+    { value: 'bn', label: 'Bengali' },
+    { value: 'gu', label: 'Gujarati' },
+    { value: 'pa', label: 'Punjabi' },
+    { value: 'or', label: 'Odia' },
   ];
 
   return (
@@ -91,9 +140,15 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
           id="language"
           label="Select Language"
           value={language}
-          onChange={(e) => setLanguage(e.target.value)}
+          onChange={handleLanguageChange}
           options={languageOptions}
         />
+        
+        {formData.detectedLanguage && (
+          <div className="mt-2 text-sm text-blue-600">
+            {formData.detectedLanguage} detected
+          </div>
+        )}
       </div>
       
       <VoiceInput 
@@ -101,7 +156,13 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
         language={language}
       />
       
-      <form onSubmit={handleSubmit}>
+      {translationMessage && (
+        <div className={`mt-4 text-sm ${processingTranslation ? 'text-blue-600' : 'text-green-600'}`}>
+          {translationMessage}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="mt-6">
         <FormInput
           id="name"
           label="Product Name"
@@ -129,23 +190,40 @@ const CatalogEntryForm: React.FC<CatalogEntryFormProps> = ({ onSubmit, isLoading
         
         <div className="mb-4">
           <label htmlFor="descriptionEnglish" className="block text-sm font-medium text-gray-700 mb-2">
-            Description
+            Description (English)
           </label>
           <textarea
             id="descriptionEnglish"
             name="descriptionEnglish"
             value={formData.descriptionEnglish}
             onChange={handleChange}
-            rows={4}
+            rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         
+        {language !== 'en' && (
+          <div className="mb-4">
+            <label htmlFor="descriptionLocal" className="block text-sm font-medium text-gray-700 mb-2">
+              Description ({formData.detectedLanguage || languageOptions.find(opt => opt.value === language)?.label || 'Local Language'})
+            </label>
+            <textarea
+              id="descriptionLocal"
+              name="descriptionLocal"
+              value={formData.descriptionLocal}
+              onChange={handleChange}
+              rows={3}
+              dir={['ar', 'ur', 'he'].includes(language) ? 'rtl' : 'ltr'}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
+        
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || processingTranslation}
           className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-            isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+            isLoading || processingTranslation ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
           }`}
         >
           {isLoading ? 'Saving...' : 'Add Product'}

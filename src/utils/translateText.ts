@@ -1,26 +1,37 @@
 import axios from 'axios';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_API_KEY = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GROQ_API_KEY) ? (import.meta as any).env.VITE_GROQ_API_KEY : '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';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_KEY = 'AIzaSyAJm2ta9ruYf8ftqtDWYFx9I-s6yC4dsfo';
 
 export async function translateText(inputText: string, sourceLang: string, targetLang: string): Promise<string> {
   const prompt = `Translate the following text from ${sourceLang} to ${targetLang}: "${inputText}". Only return the translated text, and nothing else. Do not add any explanation, notes, or extra information.`;
-  const response = await axios.post(
-    GROQ_API_URL,
-    {
-      model: 'llama3-70b-8192',
-      messages: [
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0,
-      max_tokens: 256,
-    },
-    {
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
+  
+  try {
+    const response = await axios.post(
+      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 256
+        }
       },
-    }
-  );
-  return response.data.choices?.[0]?.message?.content?.trim() || '';
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  } catch (error) {
+    console.error('Error translating with Gemini API:', error);
+    return '';
+  }
 } 

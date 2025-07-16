@@ -363,17 +363,28 @@ const Dashboard: React.FC = () => {
               
               <CatalogEntryForm 
                 onSubmit={(productData) => {
-                  // Set the product form data
-                  setProductForm({
-                    name: productData.name,
-                    quantity: productData.quantity,
-                    price: productData.price.toString(),
-                    descriptionEnglish: productData.descriptionEnglish,
-                    descriptionLocal: '',
-                  });
-                  
-                  // Submit the product form
-                  handleProductSubmit(new Event('submit') as any);
+                  try {
+                    // Set the product form data
+                    setProductForm({
+                      name: productData.name,
+                      quantity: productData.quantity,
+                      price: productData.price.toString(),
+                      descriptionEnglish: productData.descriptionEnglish,
+                      descriptionLocal: productData.descriptionLocal || '',
+                    });
+                    
+                    // If we detected a language, update the voice language
+                    if (productData.languageCode) {
+                      setVoiceLanguage(productData.languageCode);
+                    }
+                    
+                    // Submit the product form
+                    handleProductSubmit(new Event('submit') as any);
+                  } catch (error) {
+                    console.error("Error submitting product:", error);
+                    // Show an error message to the user
+                    alert("Failed to add product. Please try again.");
+                  }
                 }}
                 isLoading={isLoading}
               />

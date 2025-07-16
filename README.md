@@ -1,119 +1,52 @@
 # Voice Catalyst
 
-Voice Catalyst is a voice-enabled product catalog application that helps small businesses create and manage their product catalogs using voice commands. The application now uses Firebase for authentication and data storage.
+Voice Catalyst is an agentic AI solution designed to help farmers create and manage product catalogs using voice input in their native language. The application combines speech-to-text technology with advanced language models to provide a seamless multilingual experience.
 
 ## Features
 
-- **Voice Input**: Add products by speaking in your preferred language
-- **Multi-language Support**: Support for English, Hindi, Tamil, Telugu, Kannada, and Malayalam
-- **User Authentication**: Secure login with email/password or Google Sign-In via Firebase
-- **Product Management**: Create, view, edit, and delete products
-- **Catalog Sharing**: Generate shareable links and QR codes for your product catalog
-- **Profile Management**: Update user profile information and upload profile pictures
+### Voice-to-Text with Language Detection
+
+- **Speak in Any Language**: Farmers can speak in their native language to add products to the catalog
+- **Automatic Language Detection**: The system automatically identifies the language being spoken
+- **Structured Data Extraction**: AI extracts product name, quantity, price, and description from spoken input
+- **Multilingual Support**: Supports a wide range of languages including Hindi, Tamil, Telugu, and many more
+
+### Catalog Management
+
+- **Easy Product Addition**: Add products to your catalog using voice or text input
+- **Product Details**: Track product name, quantity, price, and descriptions
+- **Bilingual Descriptions**: Store product descriptions in both English and the detected local language
+- **QR Code Sharing**: Generate QR codes to share your catalog with customers
 
 ## Technology Stack
 
-- **Frontend**: React, Next.js, TypeScript, Tailwind CSS
-- **Authentication**: Firebase Authentication
-- **Database**: Firebase Firestore
-- **Image Upload**: Cloudinary
-- **State Management**: React Hooks
-- **Routing**: React Router
-- **UI Components**: Custom components with Tailwind CSS
+- **React**: Frontend framework
+- **TypeScript**: Type-safe JavaScript
+- **Firebase**: Authentication and database
+- **AssemblyAI**: Speech-to-text transcription
+- **Google Gemini API**: Language detection, data extraction, and translation using Gemini Pro model
+- **Tailwind CSS**: Styling and UI components
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js (v14 or later)
-- npm (v6 or later)
-- Firebase account
-- Cloudinary account (for image uploads)
-
-### Installation
-
 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/voice-catalyst.git
-cd voice-catalyst
-```
+2. Install dependencies: `npm install`
+3. Set up environment variables:
+   - `REACT_APP_FIREBASE_API_KEY`
+   - `REACT_APP_FIREBASE_AUTH_DOMAIN`
+   - `REACT_APP_FIREBASE_PROJECT_ID`
+   - `REACT_APP_FIREBASE_STORAGE_BUCKET`
+   - `REACT_APP_FIREBASE_MESSAGING_SENDER_ID`
+   - `REACT_APP_FIREBASE_APP_ID`
+   - `REACT_APP_ASSEMBLY_AI_KEY`
+   - `REACT_APP_GEMINI_API_KEY`
+4. Start the development server: `npm start`
 
-2. Install dependencies
-```bash
-npm install
-```
+## Documentation
 
-3. Create a `.env` file in the root directory with your Firebase configuration
-```
-REACT_APP_FIREBASE_API_KEY=your_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
-```
-
-4. Set up Cloudinary (see [CLOUDINARY_SETUP.md](CLOUDINARY_SETUP.md) for detailed instructions)
-
-5. Start the development server
-```bash
-npm start
-```
-
-## Firebase Setup
-
-1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
-2. Enable Authentication (Email/Password and Google providers)
-3. Create a Firestore database
-4. Add the Firebase configuration to your application
-
-## Cloudinary Setup
-
-See [CLOUDINARY_SETUP.md](CLOUDINARY_SETUP.md) for detailed instructions on setting up Cloudinary for image uploads.
-
-## Firestore Data Structure
-
-### Users Collection
-```
-users/
-  {userId}/
-    full_name: string
-    email: string
-    mobile_number: string
-    location: string
-    preferred_language: string
-    user_role: string
-    shop_name?: string
-    shop_address?: string
-    image_url?: string
-    created_at: timestamp
-    last_login: timestamp
-```
-
-### Products Collection
-```
-products/
-  {productId}/
-    userId: string
-    name: string
-    quantity: string
-    price: number
-    descriptionEnglish: string
-    descriptionLocal: string
-    createdAt: timestamp
-    updatedAt: timestamp
-```
-
-## Development
-
-### Available Scripts
-
-- `npm start` - Run the React application
-- `npm run dev` - Run the Next.js development server
-- `npm run build` - Build the React application
-- `npm run build:next` - Build the Next.js application
-- `npm test` - Run tests
+- [Voice-to-Text Implementation](VOICE_TO_TEXT.md)
+- [Language Detection and Data Extraction](LANGUAGE_DETECTION.md)
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
